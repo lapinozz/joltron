@@ -58,7 +58,7 @@ namespace Pong
     {
         auto& data = state.data.pong;
 
-        for(uint8_t x = 0; x < state.playerCount; x++)
+        for(uint8_t x = 0; x < state.maxPlayerCount; x++)
         {
             for(uint8_t y = 0; y < data.paddleLength; y++)
             {
@@ -98,7 +98,7 @@ namespace Pong
 
         if(data.ballX + deltaX >= fieldWidth - ballSize)
         {
-            state.onPlayerLoose(1);
+            state.onPlayerDie(1);
         }
         else if(data.ballX + deltaX >= fieldWidth - ballSize - data.paddleOffset && ballPaddleoverlap(data.ballY, data.paddlePositions[1]))
         {
@@ -109,7 +109,7 @@ namespace Pong
         }
         else if(deltaX < 0 && (1 - deltaX) >= data.ballX)
         {
-            state.onPlayerLoose(0);
+            state.onPlayerDie(0);
         }
         else if(deltaX < 0 && (1 - deltaX) + data.paddleOffset >= data.ballX &&  ballPaddleoverlap(data.ballY, data.paddlePositions[0]))
         {
@@ -125,7 +125,7 @@ namespace Pong
 
         if(data.ballY + deltaY >= fieldWidth - ballSize)
         {
-            state.onPlayerLoose(3);
+            state.onPlayerDie(3);
         }
         else if(data.ballY + deltaY >= fieldWidth - ballSize - data.paddleOffset && ballPaddleoverlap(data.ballX, data.paddlePositions[3]))
         {
@@ -136,7 +136,7 @@ namespace Pong
         }
         else if(deltaY < 0 && (1 - deltaY) >= data.ballY)
         {
-            state.onPlayerLoose(2);
+            state.onPlayerDie(2);
         }
         else if(deltaY < 0 && (1 - deltaY) + data.paddleOffset >= data.ballY &&  ballPaddleoverlap(data.ballX, data.paddlePositions[2]))
         {
@@ -155,7 +155,7 @@ namespace Pong
     {
         auto& data = state.data.pong;
 
-        for(uint8_t x = 0; x < state.playerCount; x++)
+        for(uint8_t x = 0; x < state.maxPlayerCount; x++)
         {
             const auto direction = data.paddleDirections & (1 << x);
             auto& position = data.paddlePositions[x];
@@ -187,7 +187,7 @@ namespace Pong
     {
         auto& data = state.data.pong;
 
-        for(uint8_t x = 0; x < state.playerCount; x++)
+        for(uint8_t x = 0; x < state.maxPlayerCount; x++)
         {
             auto direction = data.paddleDirections & (1 << x);
 
@@ -333,6 +333,13 @@ namespace Pong
                 drawInstructions(state, display);
                 return;
             }
+            else if(state.phase == GameState::Phase::GameResults)
+            {
+                state.advance();
+            }
+            else if(state.phase == GameState::Phase::Scores)
+            {                
+            }
         }
 
         if(state.phase != GameState::Phase::Running && state.phase != GameState::Phase::Demo)
@@ -340,13 +347,25 @@ namespace Pong
             return;
         }
 
+        if(state.phase == GameState::Phase::Running && state.playerPresence != state.playerAlive)
+        {
+            state.advance();
+            return;
+        }
+
         display.selectPlayers(state.playerPresence);
 
         if(state.phase == GameState::Phase::Demo)
         {
+            if(state.playCount[state.gameIndex] > 1)
+            {
+                state.advance();
+                return;
+            }
+
             if(state.phaseDuration >= demoDuration)
             {
-                state.nextPhase(); 
+                state.advance();
                 return;
             }
 

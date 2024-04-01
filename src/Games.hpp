@@ -9,19 +9,37 @@
 #include "games/pong.hpp"
 #include "games/reaction.hpp"
 
+static constexpr PROGMEM const GameDefinition gameDefinitions[] =
+{
+    Pong::definition,
+    Reaction::definition,
+};
+
+static constexpr uint8_t GameCount = sizeof(gameDefinitions) / sizeof(gameDefinitions[0]);
+
 struct GameState
 {
-    enum Phase : uint8_t
+    enum class Phase : int8_t
     {
-        None,
+        None = -1,
         Init,
         Title,
         Demo,
         Instructions,
         Countdown,
         Running,
+        Zaps,
+        GameResults,
         Scores,
         Finished
+    };
+
+    enum class Difficulty : int8_t
+    {
+        None = -1,
+        Easy,
+        Normal,
+        Hard
     };
 
     uint32_t now = {};
@@ -47,13 +65,21 @@ struct GameState
     uint8_t playerPresence = 0b0001;
     uint8_t playerAlive = playerPresence;
     uint8_t playerReady = 0;
+    uint8_t scores[maxPlayerCount] = {};
+    char names[maxPlayerCount] = {'A', 'B', 'C', 'D'};
 
-    void reset()
+    int8_t gameIndex = -1;
+    uint8_t playCount[GameCount] = {};
+    
+    Difficulty difficulty = Difficulty::None;
+
+    void init()
     {
         phase = Phase::Init;
         lastPhase = Phase::None;
         playerAlive = playerPresence;
         playerReady = 0;
+        difficulty = Difficulty::None;
     }
 
     bool isPlayerPresent(uint8_t index) const
@@ -66,13 +92,14 @@ struct GameState
         return playerPresence & playerAlive & (1 << index);
     }
 
-    void onPlayerLoose(uint8_t index)
+    bool isPlayerDead(uint8_t index) const
+    {
+        return playerPresence & ~playerAlive & (1 << index);
+    }
+
+    void onPlayerDie(uint8_t index)
     {
         playerAlive &= ~(1 << index);
-        //while(true)
-        {
-
-        }
     }
 
     void setPlayerReady(uint8_t index)
@@ -90,7 +117,7 @@ struct GameState
         return playerReady == playerAlive;
     }
 
-    void nextPhase()
+    void advance()
     {
         phase = static_cast<Phase>(static_cast<uint8_t>(phase) + 1);
     }
@@ -98,22 +125,22 @@ struct GameState
 
 struct GameRunner
 {
-    static constexpr PROGMEM const GameDefinition definitions[] =
-    {
-        Pong::definition,
-        Reaction::definition,
-    };
-
-    static constexpr uint8_t GameCount = sizeof(definitions) / sizeof(definitions[0]);
-
     GameDefinition definition = {};
-
     GameState state = {};
 
-    void setGame(uint8_t index)
+    void setGame(int8_t index)
     {
-        definition = readPgm(definitions[index]);
-        state.reset();
+        if(index >= 0)
+        {
+            definition = readPgm(gameDefinitions[index]);
+        }
+        else
+        {
+            definition = {};
+        }
+
+        state.init();
+        state.gameIndex = index;
     }
 
     void update(Display& display, Input& input, LedController& ledController);

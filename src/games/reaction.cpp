@@ -19,7 +19,7 @@ namespace Reaction
         {
             if(state.phase == GameState::Phase::Demo)
             {
-                state.nextPhase();
+                state.advance();
                 return;
             }
 

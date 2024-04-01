@@ -252,12 +252,17 @@ public:
         SI2C.write_P(Font::getChar(c), Font::charWidth);
     }
 
+    void printSpace()
+    {
+        SI2C.write(0x00);
+    }
+
     void print(const char* str)
     {
         while(*str != 0)
         {
             print(*(str++));
-            SI2C.write(0x00);
+            printSpace();
         }
     }
 
@@ -276,7 +281,7 @@ public:
         }
     }
 
-    void print(unsigned long number, uint8_t base = 10)
+    void print_UL(unsigned long number, uint8_t base = 10)
     {
         char buf[8 * sizeof(number) + 1];
         char *str = &buf[sizeof(buf) - 1];
@@ -294,7 +299,7 @@ public:
         return print(str);
     }
 
-    void print(long number, uint8_t base = 10)
+    void print_L(long number, uint8_t base = 10)
     {
         if (number < 0)
         {
@@ -302,10 +307,10 @@ public:
             number = -number;
         }
 
-        print(static_cast<unsigned long>(number), base);
+        print_UL(static_cast<unsigned long>(number), base);
     }
 
-    void print(float number, uint8_t precision = 2)
+    void print_F(float number, uint8_t precision = 2)
     {
         if (number < 0.0)
         {
@@ -321,7 +326,7 @@ public:
 
         unsigned long intPart = static_cast<unsigned long>(number);
         double remainder = number - static_cast<double>(intPart);
-        print(intPart);
+        print_UL(intPart);
 
         if (precision > 0)
         {

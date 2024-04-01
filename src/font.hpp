@@ -8,6 +8,8 @@ namespace Font
     constexpr uint8_t startChar = ' ';
     constexpr uint8_t charWidth = 5;
     constexpr uint8_t charHeight = 8;
+    constexpr uint8_t spaceWidth = 1;
+    constexpr uint8_t charAdvance = charWidth + spaceWidth;
 
     constexpr PROGMEM uint8_t buffer[] = {
         0x00, 0x00, 0x00, 0x00, 0x00, //  
