@@ -68,7 +68,7 @@ public:
         else return (int16_t)x;
     }
 
-    constexpr FixedPoint operator-()
+    constexpr FixedPoint operator-() const
     {
         return fromRaw(-raw);
     }

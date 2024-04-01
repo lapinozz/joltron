@@ -75,30 +75,6 @@ struct Input
         MenuDown    = 1 << 6,
     };
 
-    void enableInputs()
-    {
-       // DDRC &= ~menuButtonsMask;
-        //PORTC |= menuButtonsMask;
-
-        DDRB &= ~handleButtonMask_B;
-        PORTB &= ~handleButtonMask_B;
-
-        DDRD &= ~handleButtonMask_D;
-        PORTD &= ~handleButtonMask_D;
-    }
-
-    void disableInputs()
-    {
-        //DDRC |= menuButtonsMask;
-        //PORTC |= menuButtonsMask;
-
-        DDRB |= handleButtonMask_B;
-        PORTB |= handleButtonMask_B;
-
-        DDRD |= handleButtonMask_D;
-        PORTD |= handleButtonMask_D;
-    }
-
     void init()
     {
         DDRC &= ~menuButtonsMask;
@@ -131,15 +107,9 @@ struct Input
 
         auto& port = handleIndex == 1 || handleIndex == 2 ? PORTB : PORTD;
 
-        //disableInputs();
-
         port |= masks[handleIndex];
         delay(duration);
         port &= ~masks[handleIndex];
-
-        //delay(100);
-        //enableInputs();
-        delay(100);
     }
 
     uint8_t read() const
