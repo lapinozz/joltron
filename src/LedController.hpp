@@ -48,6 +48,14 @@ struct LedController
         leds[index] = value;
     }
 
+    void clear()
+    {
+        for(uint8_t x = 0; x < LedCount; x++)
+        {
+            leds[x] = {};
+        }
+    }
+
     void display()
     {
         const auto now = millis();

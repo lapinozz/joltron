@@ -73,6 +73,9 @@ struct Input
         MenuUp      = 1 << 4,
         MenuSelect  = 1 << 5,
         MenuDown    = 1 << 6,
+
+        Handles = Handle0 | Handle1 | Handle2 | Handle3,
+        MenuButtons = MenuUp | MenuSelect | MenuDown,
     };
 
     void init()

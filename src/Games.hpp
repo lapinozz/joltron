@@ -42,11 +42,7 @@ struct GameState
         Hard
     };
 
-    uint32_t now = {};
-    uint32_t lastFrame = {};
     uint8_t deltaTime = {};
-
-    uint32_t phaseStart = {};
     uint32_t phaseDuration = {};
 
     Phase phase;
@@ -61,8 +57,8 @@ struct GameState
     GameData data;
 
     static constexpr uint8_t maxPlayerCount = 4; 
-    uint8_t playerCount = maxPlayerCount;
-    uint8_t playerPresence = 0b0001;
+    uint8_t playerCount = 0;
+    uint8_t playerPresence = 0;
     uint8_t playerAlive = playerPresence;
     uint8_t playerReady = 0;
     uint8_t scores[maxPlayerCount] = {};
@@ -80,6 +76,18 @@ struct GameState
         playerAlive = playerPresence;
         playerReady = 0;
         difficulty = Difficulty::None;
+    }
+
+    void playerJoin(uint8_t index)
+    {
+        if(isPlayerPresent(index))
+        {
+            return;
+        }
+
+        playerPresence |= (1 << index);
+        names[index] = 'A' + playerCount;
+        playerCount++;
     }
 
     bool isPlayerPresent(uint8_t index) const
@@ -119,6 +127,7 @@ struct GameState
 
     void advance()
     {
+        phaseDuration = 0;
         phase = static_cast<Phase>(static_cast<uint8_t>(phase) + 1);
     }
 };
@@ -143,5 +152,5 @@ struct GameRunner
         state.gameIndex = index;
     }
 
-    void update(Display& display, Input& input, LedController& ledController);
+    void update(uint8_t deltaTime, Display& display, Input& input, LedController& ledController);
 };

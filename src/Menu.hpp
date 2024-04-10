@@ -5,17 +5,26 @@
 #include "Display.hpp"
 #include "LedController.hpp"
 
+#include "Games.hpp"
+
 enum Menus : uint8_t
 {
     Main,
     SelectGame,
+    DifficultySelect,
     Settings,
+    Paused,
+
+    Count
 };
 
 enum MenuAction : uint8_t
 {
     None,
     Play,
+    Resume,
+    ExitToMenu,
+    Traitor,
 
 };
 
@@ -23,12 +32,16 @@ enum EntryType : uint8_t
 {
     Menu,
     Action,
+    GameSelect,
+    Difficulty,
 };
 
 class MenuEntry
 {
+public:
     using Param = uint16_t;
 
+private:
     EntryType type;
     
     const char* text;
@@ -47,6 +60,8 @@ public:
     constexpr MenuEntry(const char* text, Menus target) : type(EntryType::Menu), text(text), data{.target=target}
     {}
     constexpr MenuEntry(const char* text, MenuAction action) : type(EntryType::Action), text(text), data{.action=action}
+    {}
+    constexpr MenuEntry(const char* text, EntryType type, Param param) : type(type), text(text), data{.param=param}
     {}
 
 /*
@@ -72,6 +87,11 @@ public:
         return readPgm(&data.action);
     }
 
+    Param getParam() const
+    { 
+        return readPgm(&data.param);
+    }
+
     const char* getText() const
     { 
         return readPgm(&text);
@@ -89,18 +109,55 @@ PROGMEM static constexpr MenuEntry MenuEntries_Main[] = {
     {"Settings"_PSTR, Menus::Settings},
 };
 
-PROGMEM static constexpr MenuEntry MenuEntries_Sub[]
+PROGMEM static constexpr MenuEntry MenuEntries_DifficultySelect[]
 {
+    {"Easy"_PSTR, EntryType::Difficulty, static_cast<MenuEntry::Param>(GameState::Difficulty::Easy)},
+    {"Normal"_PSTR, EntryType::Difficulty, static_cast<MenuEntry::Param>(GameState::Difficulty::Normal)},
+    {"Hard"_PSTR, EntryType::Difficulty, static_cast<MenuEntry::Param>(GameState::Difficulty::Hard)},
+};
+
+PROGMEM static constexpr MenuEntry MenuEntries_Settings[]
+{
+    {"Back"_PSTR, Menus::Main},
     {"Main2"_PSTR, Menus::Main},
     {"Sub2"_PSTR, Menus::Main},
 };
 
+PROGMEM static constexpr MenuEntry MenuEntries_Paused[]
+{
+    {"Resume"_PSTR, MenuAction::Resume},
+    {"Exit To Menu"_PSTR, MenuAction::ExitToMenu},
+    {"TRAITOR"_PSTR, MenuAction::Traitor},
+};
+
+template<uint8_t size>
+using MenuEntries = MenuEntry[size];
+
+constexpr const MenuEntries<GameCount>& buildGameSelectMenu()
+{    
+    return []<auto... Xs>(seq<Xs...>) -> const MenuEntries<GameCount>&
+    {
+        PROGMEM static constexpr MenuEntry entries[GameCount] =
+        {
+            MenuEntry{gameDefinitions[Xs].title, EntryType::GameSelect, Xs}...
+        };
+
+        return entries;
+    }
+    (gen_seq<GameCount>{});
+}
+
+constexpr const MenuEntries<GameCount>& MenuEntries_SelectGame = buildGameSelectMenu();
+
 #define MENU_LIST_ENTRY(menu) {MenuEntries_ ## menu, sizeof(MenuEntries_  ## menu) / sizeof(MenuEntries_ ## menu[0])}
 
-PROGMEM static constexpr MenuDefinition menuDefinitions[]
+PROGMEM static constexpr MenuDefinition menuDefinitions[static_cast<uint8_t>(Menus::Count)]
 {
     MENU_LIST_ENTRY(Main),
-    //MENU_LIST_ENTRY(Sub),
+    MENU_LIST_ENTRY(SelectGame),
+    MENU_LIST_ENTRY(DifficultySelect),
+    MENU_LIST_ENTRY(Settings),
+    MENU_LIST_ENTRY(Paused),
 };
 
 MenuDefinition getMenu(Menus menu)
@@ -165,19 +222,19 @@ public:
         needsRedraw = true;
     }
 
-    MenuAction onSelect()
+    const MenuEntry* onSelect()
     {
         const auto& entry = definition.entries[currentIndex];
         if(entry.getType() == EntryType::Menu)
         {
             setMenu(entry.getTarget());
         }
-        else if(entry.getType() == EntryType::Action)
+        else
         {
-            return entry.getAction();
+            return &entry;
         }
 
-        return {};
+        return nullptr;
     }
 
     void updateLeds(Input& input, LedController& ledController)
@@ -208,9 +265,14 @@ public:
         definition = getMenu(menu);
     }
     
-    MenuAction update(Display& display, Input& input, LedController& ledController)
+    const MenuEntry* update(Display& display, Input& input, LedController& ledController)
     {
-        MenuAction action = MenuAction::None;
+        updateLeds(input, ledController);
+
+        if(needsRedraw)
+        {
+            redraw(display);
+        }
 
         if(input.isNewPressed(Input::Button::MenuUp))
         {
@@ -222,16 +284,9 @@ public:
         }
         else if(input.isNewPressed(Input::Button::MenuSelect))
         {
-            action = onSelect();
+            return onSelect();
         }
 
-        updateLeds(input, ledController);
-
-        if(needsRedraw)
-        {
-            redraw(display);
-        }
-
-        return action;
+        return nullptr;
     }
 };

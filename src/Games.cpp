@@ -5,27 +5,23 @@
 #include "Display.hpp"
 #include "LedController.hpp"
 
-void GameRunner::update(Display& display, Input& input, LedController& ledController)
+void GameRunner::update(uint8_t deltaTime, Display& display, Input& input, LedController& ledController)
 {
     if(state.gameIndex < 0)
     {
         return;
     }
-
-    state.now = millis();
-    state.deltaTime = state.now - state.lastFrame;
     
     const auto phase = state.phase;
 
     if(state.lastPhase != phase)
     {
-        state.phaseStart = state.now;
-
         display.selectScreen(Display::Screen::Players);
         display.clearRect();
     }
 
-    state.phaseDuration = state.now - state.phaseStart;
+    state.deltaTime = deltaTime;
+    state.phaseDuration += state.deltaTime;
 
     if(definition.update)
     {
@@ -165,9 +161,7 @@ void GameRunner::update(Display& display, Input& input, LedController& ledContro
     else if(phase == GameState::Phase::Scores)
     {
         if(state.lastPhase != phase)
-        {            
-            state.playerPresence = 0b1111;
-
+        {
             display.selectPlayers(state.playerPresence);
 
             display.startDraw(22, 0, Display::Width - 22, 8);
@@ -212,11 +206,15 @@ void GameRunner::update(Display& display, Input& input, LedController& ledContro
                 display.print_UL(score);
             }
         }
+    
+        if(state.phaseDuration > 10000)
+        {
+            state.advance();
+        }
     }
     else if(phase == GameState::Phase::Finished)
     {
     }
 
     state.lastPhase = phase;
-    state.lastFrame = state.now;
 }
