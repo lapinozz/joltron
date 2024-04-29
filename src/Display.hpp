@@ -121,7 +121,7 @@ public:
         //SI2C.stop();
     }
 
-    void selectScreen(Screen screen)
+    auto selectScreen(Screen screen)
     {
         SI2C.start();
         SI2C.sendAddresWrite(0b01110000);
@@ -142,15 +142,18 @@ public:
         {
             screens |= Screen::Player1;
         }
-        else if(players & (1 << 1))
+
+        if(players & (1 << 1))
         {
             screens |= Screen::Player2;
         }
-        else if(players & (1 << 2))
+
+        if(players & (1 << 2))
         {
             screens |= Screen::Player3;
         }
-        else if(players & (1 << 3))
+
+        if(players & (1 << 3))
         {
             screens |= Screen::Player4;
         }

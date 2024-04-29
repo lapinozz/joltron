@@ -8,11 +8,13 @@
 
 #include "games/pong.hpp"
 #include "games/reaction.hpp"
+#include "games/voting.hpp"
 
 static constexpr PROGMEM const GameDefinition gameDefinitions[] =
 {
     Pong::definition,
     Reaction::definition,
+    Voting::definition
 };
 
 static constexpr uint8_t GameCount = sizeof(gameDefinitions) / sizeof(gameDefinitions[0]);
@@ -52,6 +54,7 @@ struct GameState
     {
         Pong::Data pong;
         Reaction::Data reaction;
+        Voting::Data voting;
     };
 
     GameData data;

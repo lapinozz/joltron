@@ -5,7 +5,7 @@ App app;
 void setup()
 {
   app.init();
-  app.setPhase(App::Phase::Joining);
+  //app.setPhase(App::Phase::Joining);
 }
 
 void loop()

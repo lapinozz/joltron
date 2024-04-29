@@ -26,6 +26,172 @@ namespace Glyphs
         };
     }
 
+    template <StringLiteral...Strs>
+    constexpr Glyph makeVisualGlyph()
+    {
+        constexpr auto width = (strlen_constexpr(Strs.value) , ...);
+        constexpr auto height = sizeof...(Strs);
+
+        static_assert(((strlen_constexpr(Strs.value) == width) && ...));
+        static_assert(height % 8 == 0);
+
+        struct Buffer
+        {
+            bool data[width][height];
+
+            constexpr Buffer()
+            {
+                const auto makeRow = [&](auto str, uint8_t rowIndex)
+                {
+                    for(uint8_t x = 0; x < width; x++)
+                    {
+                        data[x][rowIndex] = str.value[x] != ' ';
+                    }
+                };
+                
+                [&]<auto... Xs>(seq<Xs...>)
+                {
+                    (makeRow(Strs, Xs), ...);
+                }
+                (gen_seq<height>{});
+            }
+        };
+
+        constexpr Buffer buffer;
+
+        struct CompressedVerticalBuffer
+        {
+            uint8_t data[width * height / 8];
+
+            constexpr CompressedVerticalBuffer(const Buffer& buffer)
+            {
+                for(uint8_t rowPackIndex = 0; rowPackIndex < height / 8; rowPackIndex++)
+                {
+                    for(uint8_t x = 0; x < width; x++)
+                    {
+                        uint8_t byte{};
+                        for(uint8_t y = 0; y < 8; y++)
+                        {
+                            byte |= buffer.data[x][rowPackIndex * 8 + y] << y;
+                        }
+
+                        data[rowPackIndex * width + x] = byte;
+                    }
+                }
+            }
+        };
+
+        static constexpr PROGMEM CompressedVerticalBuffer compressedBuffer{buffer};
+
+        return {
+            width,
+            height,
+            width * height / 8,
+            compressedBuffer.data
+        };
+    }
+    
+    template <const Glyph& glyph, uint8_t rotation>
+    constexpr Glyph rotateGlyph()
+    {
+        constexpr auto width = glyph.width;
+        constexpr auto height = glyph.height;
+
+        static_assert(width % 8 == 0);
+        static_assert(height % 8 == 0);
+
+        struct Buffer
+        {
+            bool data[width][height];
+
+            constexpr Buffer()
+            {
+                for(uint8_t rowPackIndex = 0; rowPackIndex < height / 8; rowPackIndex++)
+                {
+                    for(uint8_t x = 0; x < width; x++)
+                    {
+                        const auto byte = glyph.data[rowPackIndex * width + x];
+                        for(uint8_t y = 0; y < 8; y++)
+                        {
+                            data[x][rowPackIndex * 8 + y] = (byte >> y) & 1;
+                        }
+                    }
+                }
+            }
+        };
+
+        constexpr Buffer buffer;
+
+        constexpr bool isMirror = rotation == 0 || rotation == 2;
+
+        constexpr auto destinationWidth = isMirror ? width : height;
+        constexpr auto destinationHeight = isMirror ? height : width;
+
+        struct RotatedBuffer
+        {
+            bool data[destinationWidth][destinationHeight];
+
+            constexpr RotatedBuffer(const Buffer& buffer)
+            {
+                for(uint8_t x = 0; x < width; x++)
+                {
+                    for(uint8_t y = 0; y < height; y++)
+                    {
+                        if(rotation == 0)
+                        {
+                            data[x][y] = buffer.data[x][y];
+                        }
+                        else if(rotation == 1)
+                        {
+                            data[x][y] = buffer.data[y][width - x - 1];
+                        }
+                        else if(rotation == 2)
+                        {
+                            data[x][y] = buffer.data[width - x - 1][height - y - 1];
+                        }
+                        else if(rotation == 3)
+                        {
+                            data[x][y] = buffer.data[height - y - 1][x];
+                        }
+                    }
+                }
+            }
+        };
+
+        constexpr RotatedBuffer rotatedBuffer(buffer);
+
+        struct CompressedVerticalBuffer
+        {
+            uint8_t data[destinationWidth * destinationHeight / 8];
+
+            constexpr CompressedVerticalBuffer(const RotatedBuffer& buffer)
+            {
+                for(uint8_t rowPackIndex = 0; rowPackIndex < destinationHeight / 8; rowPackIndex++)
+                {
+                    for(uint8_t x = 0; x < destinationWidth; x++)
+                    {
+                        uint8_t byte{};
+                        for(uint8_t y = 0; y < 8; y++)
+                        {
+                            byte |= buffer.data[x][rowPackIndex * 8 + y] << y;
+                        }
+
+                        data[rowPackIndex * destinationWidth + x] = byte;
+                    }
+                }
+            }
+        };
+
+        static constexpr PROGMEM CompressedVerticalBuffer compressedBuffer{buffer};
+
+        return {
+            destinationWidth,
+            destinationHeight,
+            width * height / 8,
+            compressedBuffer.data
+        };
+    }
+
     constexpr PROGMEM auto big1 = makeGlyph<
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0xe0, 0xf8, 0xfe, 0xfe, 0xfe, 0xfe, 
     0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
@@ -70,4 +236,28 @@ namespace Glyphs
     0x00, 0x03, 0x07, 0x1f, 0x3f, 0x3f, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f, 0x7f, 0x7f, 0x3f, 0x1f, 0x0f, 0x07, 0x03, 0x00>
     (32);
+
+    constexpr PROGMEM auto arrowBase = makeVisualGlyph<
+        "   XX   ",
+        "  XXXX  ",
+        " XXXXXX ",
+        "XXXXXXXX",
+        "  XXXX  ",
+        "  XXXX  ",
+        "  XXXX  ",
+        "  XXXX  "
+    >();
+
+    constexpr PROGMEM Glyph arrows[] = 
+    {
+        rotateGlyph<arrowBase, 0>(),
+        rotateGlyph<arrowBase, 1>(),
+        rotateGlyph<arrowBase, 2>(),
+        rotateGlyph<arrowBase, 3>(),
+    };
+
+    enum Direction
+    {
+        Up, Right, Down, Left
+    };
 }

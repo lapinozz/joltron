@@ -12,6 +12,7 @@
 #include "input.hpp"
 #include "LedController.hpp"
 #include "menu.hpp"
+#include "SettingDisplay.hpp"
 #include "Games.hpp"
 #include "glyphs.hpp"
 
@@ -22,6 +23,7 @@ public:
   {
     Joining,
     Menu,
+    Setting,
     Paused,
     Game,
 
@@ -36,6 +38,7 @@ private:
   Display display = {SI2C};
   Input input;
   MenuDisplay menu;
+  SettingDisplay settingDisplay;
   GameRunner gameRunner;
 
   Phase phase;
@@ -55,6 +58,7 @@ private:
   {
     {.onStart=&App::onJoining, .onIdle=&App::updateJoining},
     {.onStart=&App::onMenu, .onIdle=&App::updateMenu},
+    {.onIdle=&App::updateSetting},
     {.onStart=&App::onPaused, .onIdle=&App::updatePaused},
     {.onIdle=&App::updateGame},
   };
@@ -139,12 +143,27 @@ private:
       else if(type == EntryType::GameSelect)
       {
           selectedGame = entry->getParam();
+          menu.setMenu(Menus::DifficultySelect);
       }
       else if(type == EntryType::Difficulty)
       {
           selectedDifficulty = static_cast<GameState::Difficulty>(entry->getParam());
           startSelectedGame();
       }
+      else if(type == EntryType::Setting)
+      {
+        setPhase(Phase::Setting);
+        settingDisplay.setSetting(static_cast<SettingId>(entry->getParam()));
+      }
+    }
+  }
+
+  void updateSetting()
+  {
+    if(settingDisplay.update(display, input, ledController))
+    {
+      setPhase(Phase::Menu);
+      menu.setMenu(Menus::Settings);
     }
   }
 
@@ -160,8 +179,14 @@ private:
   {
     setPhase(Phase::Game);
     gameType = GameType::Continious;
-    gameRunner.state.difficulty = GameState::Difficulty::None;
-    gameRunner.setGame(random(0, GameCount));
+    
+    const auto previousGame = selectedGame;
+    do
+    {
+      selectedGame = random(0, GameCount);
+    } while (selectedGame == previousGame);
+  
+    gameRunner.setGame(selectedGame);
   }
 
   void updateGame()
@@ -225,15 +250,6 @@ public:
 
     dfPlayerSerial.begin(9600);
 
-    if (!myDFPlayer.begin(dfPlayerSerial))
-    {
-      while(true);
-    }
-    myDFPlayer.volume(1); //Set volume value. From 0 to 30
-    //myDFPlayer.outputSetting(false, 31);  //Set volume value. From 0 to 30
-
-    //myDFPlayer.play(1);
-
     SI2C.init(true);
     
     display.selectScreen(Display::Screen::All);
@@ -243,6 +259,32 @@ public:
     input.init();
 
     ledController.init();
+
+    if (!myDFPlayer.begin(dfPlayerSerial))
+    {
+      delay(50);
+      ledController.setAsByte(0b01010101);
+      while(true);
+    }
+    myDFPlayer.volume(1); //Set volume value. From 0 to 30
+    //myDFPlayer.outputSetting(false, 31);  //Set volume value. From 0 to 30
+
+    //myDFPlayer.play(1);
+
+    setPhase(App::Phase::Joining);
+
+    //gameRunner.state.playerJoin(0);
+    //gameRunner.state.playerJoin(1);
+    gameRunner.state.playerJoin(2);
+    //gameRunner.state.playerJoin(3);
+
+    setPhase(App::Phase::Game);
+    gameRunner.setGame(2);
+
+    //gameRunner.state.setPlayerReady(0);
+    //gameRunner.state.setPlayerReady(1);
+    //gameRunner.state.setPlayerReady(2);
+    //gameRunner.state.setPlayerReady(3);
   }
 
   void setPhase(Phase newPhase)

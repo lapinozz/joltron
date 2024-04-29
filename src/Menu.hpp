@@ -3,6 +3,7 @@
 #include "utils.hpp"
 #include "input.hpp"
 #include "Display.hpp"
+#include "Settings.hpp"
 #include "LedController.hpp"
 
 #include "Games.hpp"
@@ -25,7 +26,6 @@ enum MenuAction : uint8_t
     Resume,
     ExitToMenu,
     Traitor,
-
 };
 
 enum EntryType : uint8_t
@@ -34,6 +34,7 @@ enum EntryType : uint8_t
     Action,
     GameSelect,
     Difficulty,
+    Setting
 };
 
 class MenuEntry
@@ -116,13 +117,6 @@ PROGMEM static constexpr MenuEntry MenuEntries_DifficultySelect[]
     {"Hard"_PSTR, EntryType::Difficulty, static_cast<MenuEntry::Param>(GameState::Difficulty::Hard)},
 };
 
-PROGMEM static constexpr MenuEntry MenuEntries_Settings[]
-{
-    {"Back"_PSTR, Menus::Main},
-    {"Main2"_PSTR, Menus::Main},
-    {"Sub2"_PSTR, Menus::Main},
-};
-
 PROGMEM static constexpr MenuEntry MenuEntries_Paused[]
 {
     {"Resume"_PSTR, MenuAction::Resume},
@@ -133,12 +127,13 @@ PROGMEM static constexpr MenuEntry MenuEntries_Paused[]
 template<uint8_t size>
 using MenuEntries = MenuEntry[size];
 
-constexpr const MenuEntries<GameCount>& buildGameSelectMenu()
+constexpr const auto& buildGameSelectMenu()
 {    
-    return []<auto... Xs>(seq<Xs...>) -> const MenuEntries<GameCount>&
+    return []<auto... Xs>(seq<Xs...>) -> const auto&
     {
-        PROGMEM static constexpr MenuEntry entries[GameCount] =
+        PROGMEM static constexpr MenuEntry entries[GameCount + 1] =
         {
+            {"Back"_PSTR, Menus::Main},
             MenuEntry{gameDefinitions[Xs].title, EntryType::GameSelect, Xs}...
         };
 
@@ -147,7 +142,24 @@ constexpr const MenuEntries<GameCount>& buildGameSelectMenu()
     (gen_seq<GameCount>{});
 }
 
-constexpr const MenuEntries<GameCount>& MenuEntries_SelectGame = buildGameSelectMenu();
+constexpr const auto& MenuEntries_SelectGame = buildGameSelectMenu();
+
+constexpr const auto& buildSettingsMenu()
+{    
+    return []<auto... Xs>(seq<Xs...>) -> const auto&
+    {
+        PROGMEM static constexpr MenuEntry entries[SettingCount + 1] =
+        {
+            {"Back"_PSTR, Menus::Main},
+            MenuEntry{settingDefinitions[Xs].name, EntryType::Setting, Xs}...
+        };
+
+        return entries;
+    }
+    (gen_seq<SettingCount>{});
+}
+
+constexpr const auto& MenuEntries_Settings = buildSettingsMenu();
 
 #define MENU_LIST_ENTRY(menu) {MenuEntries_ ## menu, sizeof(MenuEntries_  ## menu) / sizeof(MenuEntries_ ## menu[0])}
 
@@ -183,7 +195,7 @@ public:
         needsRedraw = false;
 
         display.selectMenu();
-        display.clearRect(indicatorZoneWidth, 0, textZoneWidth);
+        display.clearRect();
 
         for(int x = 0; x < definition.entryCount; x++)
         {

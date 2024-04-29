@@ -230,4 +230,9 @@ struct Input
     {
         return ~lastInputsLongPress & currentInputsLongPress & button;
     }
+
+    bool isNewRelease(Button button) const
+    {
+        return lastInputsPress & ~currentInputsPress & button;
+    }
 };
