@@ -155,5 +155,5 @@ struct GameRunner
         state.gameIndex = index;
     }
 
-    void update(uint8_t deltaTime, Display& display, Input& input, LedController& ledController);
+    void update(uint8_t deltaTime, Display& display, Input& input, LedController& ledController, SoundController& soundController);
 };

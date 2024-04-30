@@ -4,8 +4,9 @@
 #include "input.hpp"
 #include "Display.hpp"
 #include "LedController.hpp"
+#include "debug.hpp"
 
-void GameRunner::update(uint8_t deltaTime, Display& display, Input& input, LedController& ledController)
+void GameRunner::update(uint8_t deltaTime, Display& display, Input& input, LedController& ledController, SoundController& soundController)
 {
     if(state.gameIndex < 0)
     {
@@ -25,7 +26,7 @@ void GameRunner::update(uint8_t deltaTime, Display& display, Input& input, LedCo
 
     if(definition.update)
     {
-        definition.update(state, display, input, ledController);
+        definition.update(state, display, input, ledController, soundController);
     }
 
     if(phase == GameState::Phase::Init)
@@ -35,6 +36,12 @@ void GameRunner::update(uint8_t deltaTime, Display& display, Input& input, LedCo
     }
     else if(phase == GameState::Phase::Title)
     {
+        if constexpr (debug::fastPath)
+        {
+            state.advance();
+            return;
+        }
+
         display.selectPlayers(state.playerPresence);
 
         const auto title = definition.title;
@@ -108,6 +115,12 @@ void GameRunner::update(uint8_t deltaTime, Display& display, Input& input, LedCo
     }
     else if(phase == GameState::Phase::Countdown)
     {
+        if constexpr (debug::fastPath)
+        {
+            state.advance();
+            return;
+        }
+
         display.selectPlayers(state.playerPresence);
 
         if(state.phaseDuration < 1000)

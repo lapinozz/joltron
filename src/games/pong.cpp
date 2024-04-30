@@ -8,6 +8,7 @@
 #include "input.hpp"
 #include "Display.hpp"
 #include "LedController.hpp"
+#include "Sounds.hpp"
 
 namespace Pong
 {
@@ -18,8 +19,8 @@ namespace Pong
 
     constexpr uint8_t ballSize = 2;
 
-    constexpr uint32_t demoDuration = 20000;
-    constexpr uint32_t demoGameDuration = 10000;
+    constexpr uint32_t demoDuration = 17000;
+    constexpr uint32_t demoGameDuration = 7000;
 
     void drawField(GameState& state)
     {
@@ -312,11 +313,13 @@ namespace Pong
     void drawDemo(GameState& state, Display& display)
     {
         static constexpr const char* instruction = "Press the button to  change the direction of your paddle.      If the ball touches  the wall on your sideyou loose"_PSTR;        
+       
+        display.clearRect();
         display.startDraw(0, 1*8, 126, 8*6);
         display.printP(instruction);
     }
 
-    void update(GameState& state, Display& display, Input& input, LedController& ledController)
+    void update(GameState& state, Display& display, Input& input, LedController& ledController, SoundController& soundController)
     {
         auto& data = state.data.pong;
 
@@ -373,10 +376,10 @@ namespace Pong
             {
                 if(state.phaseDuration - state.deltaTime < demoGameDuration)
                 {
-                    display.clearRect();
+                    soundController.play(Song::Pong);
+                    drawDemo(state, display);
                 }
-
-                drawDemo(state, display);
+                
                 return;
             }
         }

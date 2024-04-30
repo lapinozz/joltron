@@ -20,7 +20,7 @@ namespace Voting
         int8_t votingDuration = 30; 
     };
 
-    void update(GameState& state, Display& display, Input& input, LedController& ledController);
+    void update(GameState& state, Display& display, Input& input, LedController& ledController, SoundController& SoundController);
 
     constexpr GameDefinition definition
     {

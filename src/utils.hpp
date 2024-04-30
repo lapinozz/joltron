@@ -19,7 +19,7 @@ T readPgm(const T& ptr)
 
 namespace Random
 {
-    inline void init()
+    inline auto init()
     {
         unsigned long seed = 0;
         for(uint8_t x = 0; x < sizeof(seed) * 8 / 2; x++)
@@ -30,6 +30,8 @@ namespace Random
         }
 
         randomSeed(seed);
+    
+        return seed;
     }
 
     inline bool binary()
@@ -37,6 +39,13 @@ namespace Random
         return random(0, 2);
     }
 }
+
+template <typename T, typename Size = uint8_t>
+struct Array
+{
+    T* data;
+    Size size;
+};
 
 inline void sort(uint8_t* keys, uint8_t* values, uint8_t count)
 {
@@ -53,6 +62,31 @@ inline void sort(uint8_t* keys, uint8_t* values, uint8_t count)
 
         keys[y + 1] = key;
     }
+}
+
+template<typename T>
+inline void swap(T& v1, T& v2)
+{
+    T temp = v1;
+    v1 = v2;
+    v2 = temp;
+}
+
+inline void reverseArray(uint8_t* values, uint8_t count)
+{
+    for (uint8_t x = 0; x < count / 2; x++)
+    {
+        swap(values[x], values[count - x - 1]);
+    }
+}
+
+inline void shuffle(uint8_t* values, uint8_t count)
+{    
+    for (uint8_t x = count - 1; x > 0; x--) 
+    { 
+        const auto y = random(x + 1);
+        swap(values[x], values[y]); 
+    } 
 }
 
 template<class T> using Invoke = typename T::type;

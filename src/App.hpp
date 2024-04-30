@@ -1,7 +1,5 @@
 
 #include <Arduino.h>
-#include "SoftwareSerial.h"
-#include "DFRobotDFPlayerMini.h"
 
 #include "SimpleI2C.h"
 #include "str.hpp"
@@ -15,6 +13,8 @@
 #include "SettingDisplay.hpp"
 #include "Games.hpp"
 #include "glyphs.hpp"
+#include "debug.hpp"
+#include "Sounds.hpp"
 
 class App
 {
@@ -31,8 +31,6 @@ public:
   };
 
 private:
-  SoftwareSerial dfPlayerSerial = {3, 4}; // RX, TX
-  DFRobotDFPlayerMini myDFPlayer;
   LedController ledController;
   SimpleI2C SI2C;
   Display display = {SI2C};
@@ -40,6 +38,7 @@ private:
   MenuDisplay menu;
   SettingDisplay settingDisplay;
   GameRunner gameRunner;
+  SoundController soundController;
 
   Phase phase;
   
@@ -71,11 +70,14 @@ private:
 
   GameType gameType;
 
-  uint8_t selectedGame{};
+  uint8_t selectedGame = -1;
   GameState::Difficulty selectedDifficulty{};
 
   void onJoining()
   {
+    delay(100);
+    soundController.play(Song::Intro);
+
     auto& state = gameRunner.state;
     for(uint8_t x = 0; x < state.maxPlayerCount; x++)
     {
@@ -122,7 +124,35 @@ private:
 
   void onMenu()
   {
+    soundController.play(Song::Menu);
+
     menu.setMenu(Menus::Main);
+
+    display.selectPlayers();
+    
+    display.startDraw(1, 0, Display::Width - 2, 8);
+    for(uint8_t x = 1; x < Display::Width - 2; x++)
+    {
+      display.SI2C.write(0b00000001);
+    }
+    
+    display.startDraw(1, Display::Height - 8, Display::Width - 2, 8);
+    for(uint8_t x = 1; x < Display::Width - 2; x++)
+    {
+      display.SI2C.write(0b10000000);
+    }
+    
+    display.startDraw(0, 0, 1, Display::Height);
+    for(uint8_t x = 0; x < Display::Height / 8; x++)
+    {
+      display.SI2C.write(0xFF);
+    }
+    
+    display.startDraw(Display::Width - 1, 0, 1, Display::Height);
+    for(uint8_t x = 0; x < Display::Height / 8; x++)
+    {
+      display.SI2C.write(0xFF);
+    }
   }
 
   void updateMenu()
@@ -191,7 +221,7 @@ private:
 
   void updateGame()
   {
-    gameRunner.update(deltaTime, display, input, ledController);
+    gameRunner.update(deltaTime, display, input, ledController, soundController);
 
     if(input.isNewPressed(Input::Button::MenuButtons))
     {
@@ -246,9 +276,7 @@ public:
 
   void init()
   {
-    Random::init();
-
-    dfPlayerSerial.begin(9600);
+    const auto seed = Random::init();
 
     SI2C.init(true);
     
@@ -260,31 +288,25 @@ public:
 
     ledController.init();
 
-    if (!myDFPlayer.begin(dfPlayerSerial))
-    {
-      delay(50);
-      ledController.setAsByte(0b01010101);
-      while(true);
-    }
-    myDFPlayer.volume(1); //Set volume value. From 0 to 30
-    //myDFPlayer.outputSetting(false, 31);  //Set volume value. From 0 to 30
-
-    //myDFPlayer.play(1);
+    soundController.init();
 
     setPhase(App::Phase::Joining);
 
-    //gameRunner.state.playerJoin(0);
-    //gameRunner.state.playerJoin(1);
-    gameRunner.state.playerJoin(2);
-    //gameRunner.state.playerJoin(3);
+    if constexpr(debug::fastPath)
+    {
+      gameRunner.state.playerJoin(0);
+      gameRunner.state.playerJoin(1);
+      gameRunner.state.playerJoin(2);
+      gameRunner.state.playerJoin(3);
 
-    setPhase(App::Phase::Game);
-    gameRunner.setGame(2);
+      setPhase(App::Phase::Game);
+      gameRunner.setGame(1);
 
-    //gameRunner.state.setPlayerReady(0);
-    //gameRunner.state.setPlayerReady(1);
-    //gameRunner.state.setPlayerReady(2);
-    //gameRunner.state.setPlayerReady(3);
+      gameRunner.state.setPlayerReady(0);
+      gameRunner.state.setPlayerReady(1);
+      gameRunner.state.setPlayerReady(2);
+      gameRunner.state.setPlayerReady(3);
+    }
   }
 
   void setPhase(Phase newPhase)
@@ -321,9 +343,5 @@ public:
     }
 
     ledController.display();
-
-    //if (myDFPlayer.available()) {
-    //  printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
-    //}
   }
 };

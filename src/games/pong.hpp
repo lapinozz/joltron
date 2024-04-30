@@ -37,7 +37,7 @@ namespace Pong
         DisplayBuffer<64, 64> buffer;
     };
 
-    void update(GameState& state, Display& display, Input& input, LedController& ledController);
+    void update(GameState& state, Display& display, Input& input, LedController& ledController, SoundController& SoundController);
 
     constexpr GameDefinition definition
     {
