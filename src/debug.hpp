@@ -2,5 +2,5 @@
 
 namespace debug
 {
-    constexpr bool fastPath = true;
+    constexpr bool fastPath = false;
 }

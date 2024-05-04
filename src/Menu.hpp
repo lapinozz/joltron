@@ -26,6 +26,7 @@ enum MenuAction : uint8_t
     Resume,
     ExitToMenu,
     Traitor,
+    DemoZaps
 };
 
 enum EntryType : uint8_t
@@ -108,6 +109,7 @@ PROGMEM static constexpr MenuEntry MenuEntries_Main[] = {
     {"Play"_PSTR, MenuAction::Play},
     {"Select Game"_PSTR, Menus::SelectGame},
     {"Settings"_PSTR, Menus::Settings},
+    {"Demo Zaps"_PSTR, MenuAction::DemoZaps}
 };
 
 PROGMEM static constexpr MenuEntry MenuEntries_DifficultySelect[]

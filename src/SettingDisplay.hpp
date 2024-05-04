@@ -53,7 +53,7 @@ public:
         if(type == SettingDefinition::Type::Number)
         {
             const auto& number = definition.number;
-            auto& value= *number.value;
+            auto& value = *number.value;
             value += number.increment; 
             if(value > number.max)
             {
@@ -70,7 +70,7 @@ public:
         if(type == SettingDefinition::Type::Number)
         {
             const auto& number = definition.number;
-            auto& value= *number.value;
+            auto& value = *number.value;
             value -= number.increment; 
             if(value < number.min)
             {

@@ -75,7 +75,6 @@ private:
 
   void onJoining()
   {
-    delay(100);
     soundController.play(Song::Intro);
 
     auto& state = gameRunner.state;
@@ -116,6 +115,11 @@ private:
       }
     }
 
+    if(state.playerCount == GameState::maxPlayerCount)
+    {
+      setPhase(Phase::Menu);
+    }
+
     if(state.playerCount > 0 && input.isNewPressed(Input::Button::MenuButtons))
     {
       setPhase(Phase::Menu);
@@ -130,29 +134,13 @@ private:
 
     display.selectPlayers();
     
-    display.startDraw(1, 0, Display::Width - 2, 8);
+    display.startDraw(0, 0, Display::Width, 8);
+    display.SI2C.write(0xFF);
     for(uint8_t x = 1; x < Display::Width - 2; x++)
     {
-      display.SI2C.write(0b00000001);
+      display.SI2C.write(0b10000001);
     }
-    
-    display.startDraw(1, Display::Height - 8, Display::Width - 2, 8);
-    for(uint8_t x = 1; x < Display::Width - 2; x++)
-    {
-      display.SI2C.write(0b10000000);
-    }
-    
-    display.startDraw(0, 0, 1, Display::Height);
-    for(uint8_t x = 0; x < Display::Height / 8; x++)
-    {
-      display.SI2C.write(0xFF);
-    }
-    
-    display.startDraw(Display::Width - 1, 0, 1, Display::Height);
-    for(uint8_t x = 0; x < Display::Height / 8; x++)
-    {
-      display.SI2C.write(0xFF);
-    }
+    display.SI2C.write(0xFF);
   }
 
   void updateMenu()
@@ -167,7 +155,15 @@ private:
         {
           setPhase(Phase::Game);
           gameType = GameType::Continious;
-          gameRunner.setGame(0);
+          startRandomGame();
+        }
+        else if(action == MenuAction::DemoZaps)
+        {
+          for(uint8_t x = 0; x < 4; x++)
+          {
+            input.zap(x, 80);
+            delay(80);
+          }
         }
       }
       else if(type == EntryType::GameSelect)
@@ -240,9 +236,12 @@ private:
       }
     }
 
-    display.selectMenu();
-    display.clearRect(Display::Width - (Font::charWidth + 1) * 3, 0, (Font::charWidth + 1) * 3, 8);
-    display.print_L(gameRunner.state.deltaTime);
+    if constexpr (debug::fastPath)
+    {
+      display.selectMenu();
+      display.clearRect(Display::Width - (Font::charWidth + 1) * 3, 0, (Font::charWidth + 1) * 3, 8);
+      display.print_L(gameRunner.state.deltaTime);
+    }
   }
 
   void onPaused()
@@ -301,6 +300,7 @@ public:
 
       setPhase(App::Phase::Game);
       gameRunner.setGame(1);
+      gameRunner.state.difficulty = GameState::Difficulty::Hard;
 
       gameRunner.state.setPlayerReady(0);
       gameRunner.state.setPlayerReady(1);
@@ -336,6 +336,7 @@ public:
     lastFrame = now;
 
     input.update();
+    soundController.update();
 
     if(const auto onIdle = phaseFunctions[static_cast<uint8_t>(phase)].onIdle)
     {

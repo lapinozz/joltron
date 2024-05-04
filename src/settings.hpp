@@ -4,7 +4,7 @@
 
 struct Settings
 {
-    int16_t volume{};
+    int16_t volume = 20;
 };
 
 inline Settings settings{}; 
@@ -47,5 +47,5 @@ public:
 
 PROGMEM constexpr SettingDefinition settingDefinitions[] =
 {
-    {"Volume"_PSTR, SettingDefinition::Type::Number, {&settings.volume, 0, 100, 10}}
+    {"Volume"_PSTR, SettingDefinition::Type::Number, {&settings.volume, 0, 30, 5}}
 };

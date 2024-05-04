@@ -144,11 +144,20 @@ void GameRunner::update(uint8_t deltaTime, Display& display, Input& input, LedCo
     {
         if(state.lastPhase != phase)
         {
+            uint8_t zapCount = 0;
             for(int8_t x = 0; x < GameState::maxPlayerCount; x++)
             {
                 if(state.isPlayerDead(x))
                 {
-                    //input.zap(x, 50);
+                    zapCount++;
+                }
+            }
+
+            for(int8_t x = 0; x < GameState::maxPlayerCount; x++)
+            {
+                if(state.isPlayerDead(x))
+                {
+                    input.zap(x, zapCount > 1 ? 50 : 80);
 
                     state.scores[x]++;
 

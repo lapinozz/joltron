@@ -47,7 +47,8 @@ struct Array
     Size size;
 };
 
-inline void sort(uint8_t* keys, uint8_t* values, uint8_t count)
+template<typename Value>
+inline void sort(uint8_t* keys, Value* values, uint8_t count)
 {
     for (uint8_t x = 1; x < count; x++)
     {

@@ -266,7 +266,7 @@ namespace Pong
 
     void drawInstructions(GameState& state, Display& display)
     {
-        static constexpr const char* instructionStr = "  You   control   the   paddle on the "_PSTR;
+        static constexpr const char* instructionStr = "You   control   the   paddle on the "_PSTR;
         static constexpr const char* directions[] = 
         {
             "left"_PSTR,
@@ -338,6 +338,7 @@ namespace Pong
             }
             else if(state.phase == GameState::Phase::GameResults)
             {
+                soundController.stop();
                 state.advance();
             }
             else if(state.phase == GameState::Phase::Scores)
@@ -362,6 +363,7 @@ namespace Pong
         {
             if(state.playCount[state.gameIndex] > 1)
             {
+                soundController.play(Song::Pong);
                 state.advance();
                 return;
             }

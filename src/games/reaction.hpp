@@ -12,7 +12,7 @@ struct GameState;
 
 namespace Reaction
 {
-    enum class ElementType
+    enum ElementType
     {
         Sound,
         Leds,
@@ -23,11 +23,13 @@ namespace Reaction
 
     struct NumberCondition
     {
-        enum class Comparaison : uint8_t
+        enum Comparaison : uint8_t
         {
             Equal,
             Less,
             AtLeast,
+
+            Count
         };
 
         uint8_t number;
@@ -48,7 +50,7 @@ namespace Reaction
 
     struct ShapesElement
     {
-        enum class Shape
+        enum Shape : uint8_t
         {
             Square,
             Triangle,
@@ -67,7 +69,7 @@ namespace Reaction
 
     struct LedsElement
     {
-        enum class Colors
+        enum Colors : uint8_t
         {
             Red,
             Green,
@@ -82,18 +84,44 @@ namespace Reaction
         NumberCondition condition{};
     };
 
+    struct Timing
+    {
+        uint32_t minWait;
+        uint32_t maxWait;
+
+        uint32_t lastChange;
+        uint32_t nextChange;
+    };
+
     struct Data
     {
         uint8_t playerReacts{};
         uint8_t playerReactCorrect{};
-        uint8_t playerReactionTimestamp[4]{};
+        uint32_t playerReactionTimestamp[4]{};
+        uint32_t firstReactionTimestamp{};
 
-        uint8_t ElementsActive{};
-        uint8_t ElementsCorrect{};
+        bool hasIncorrectReaction = false;
 
-        LedsElement ledsElement;
-        SoundElement soundElement;
-        ShapesElement shapeElement;
+        uint32_t timeToReactAfterFirst = 1000 * 2;
+
+        uint32_t firstCorrectTime = 0;
+
+        uint8_t elementsActive{};
+        uint8_t elementsCorrect{};
+
+        LedsElement ledsElement{};
+        SoundElement soundElement{};
+        ShapesElement shapeElement{};
+
+        Timing timings[ElementType::Count]{};
+
+        uint32_t gracePeriod = 3000;
+
+        uint32_t duration = 0;
+        uint32_t minDuration = static_cast<uint32_t>(1000) * 20;
+        uint32_t maxDuration = static_cast<uint32_t>(1000) * 60 * 2;
+
+        bool firstTrigger = true;
     };
 
     void update(GameState& state, Display& display, Input& input, LedController& ledController, SoundController& SoundController);
